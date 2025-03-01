@@ -1,31 +1,23 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_memcmp.c                                        :+:      :+:    :+:   */
+/*   ft_putstr_fd.c                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: mbousset <mbousset@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2024/10/23 18:41:43 by mbousset          #+#    #+#             */
-/*   Updated: 2024/10/26 15:25:14 by mbousset         ###   ########.fr       */
+/*   Created: 2024/10/27 12:09:17 by mbousset          #+#    #+#             */
+/*   Updated: 2025/03/01 12:08:36 by mbousset         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "libft.h"
 
-int	ft_memcmp(const void *s1, const void *s2, size_t n)
+void	ft_putstr_fd(char *s, int fd)
 {
-	size_t			i;
-	unsigned char	*c1;
-	unsigned char	*c2;
+	int	i;
 
-	c1 = (unsigned char *)s1;
-	c2 = (unsigned char *)s2;
 	i = 0;
-	while (i < n)
-	{
-		if (c1[i] != c2[i])
-			return (c1[i] - c2[i]);
-		i++;
-	}
-	return (0);
+	if (fd < 0 || !s)
+		return ;
+	write(fd, s, ft_strlen(s));
 }

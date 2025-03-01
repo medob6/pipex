@@ -6,7 +6,7 @@
 /*   By: mbousset <mbousset@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/25 15:28:46 by mbousset          #+#    #+#             */
-/*   Updated: 2025/02/21 18:00:51 by mbousset         ###   ########.fr       */
+/*   Updated: 2025/03/01 10:57:03 by mbousset         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,7 +47,7 @@ int		ft_tolower(int c);
 int		ft_atoi(const char *str);
 void	*ft_calloc(size_t count, size_t size);
 char	**ft_split(const char *str, char c);
-char	*ft_itoa(int n);
+// char	*ft_itoa(int n);
 char	*ft_strmapi(char const *s, char (*f)(unsigned int, char));
 void	ft_striteri(char *s, void (*f)(unsigned int, char *));
 void	ft_putchar_fd(char c, int fd);

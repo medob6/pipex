@@ -2,7 +2,7 @@ CC = cc
 CFLAGS = -g #-fsanitize=address
 # -Wall -Werror -Wextra
 INCLUDES = -I .
-SRC = pipex.c libft/*.c parser.c get_next_line.c get_next_line_utils.c
+SRC = pipex.c utils_lib/*.c parser.c 
 OBJ = $(SRC:.c=.o)
 
 NAME = pipex

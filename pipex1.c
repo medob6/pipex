@@ -109,24 +109,24 @@ t_cmd	*parse_cmd_list(int cmd_nbr, char **av, char **envp)
 	return (cmd_lst);
 }
 
-// void	print_cmd_list(t_cmd *list_cmd, int size)
-// {
-// 	int	i;
-// 	int	j;
+void	print_cmd_list(t_cmd *list_cmd, int size)
+{
+	int	i;
+	int	j;
 
-// 	i = 0;
-// 	while (i < size)
-// 	{
-// 		j = 0;
-// 		printf("commande [%d] : path = %s ", i, list_cmd[i].path);
-// 		while (list_cmd[i].args[j])
-// 		{
-// 			printf(" %s ", list_cmd[i].args[j]);
-// 			j++;
-// 		}
-// 		i++;
-// 	}
-// }
+	i = 0;
+	while (i < size)
+	{
+		j = 0;
+		printf("commande [%d] : path = %s ", i, list_cmd[i].path);
+		while (list_cmd[i].args[j])
+		{
+			printf(" %s ", list_cmd[i].args[j]);
+			j++;
+		}
+		i++;
+	}
+}
 
 void	execute_cmd(t_cmd cmd, char **env)
 {
@@ -134,26 +134,24 @@ void	execute_cmd(t_cmd cmd, char **env)
 
 	if (!cmd.path)
 	{
+		// dup2(2, 1);
 		if (!cmd.args)
 			ft_putstr_fd("Mysh: Command not found: \n", 2);
 		else
-			// printf("Mysh: Command not found: %s\n", cmd.args[0]);
-			print_err("command not found", cmd.args[0]);
+			ft_putstr_fd(join_strings("Mysh: Command not found: ", cmd.args[0], "\n"), 2);
 		exit(127);
 	}
 	new_path = ft_strjoin(cmd.path, "/");
 	if (access(new_path, F_OK) != 0)
 	{
 		execve(cmd.path, cmd.args, env);
-		// dup2(2, 1);
-		// printf("Mysh: %s: %s\n", strerror(errno), cmd.path);
-		print_err(strerror(errno), cmd.path);
+		dup2(2, 1);
+		printf("Mysh: %s: %s\n", strerror(errno), cmd.path);
 	}
 	else
 	{
 		dup2(2, 1);
-		// printf("Mysh: %s: %s\n", strerror(21), cmd.path);
-		print_err(strerror(21), cmd.path);
+		printf("Mysh: %s: %s\n", strerror(21), cmd.path);
 	}
 	exit(1);
 }
@@ -231,18 +229,11 @@ int	is_delemeter(char *line, char *delemeter)
 		return (1);
 	return (0);
 }
-void	print_err(char *err, char *str)
-{
-	ft_putstr_fd("Mysh: ", 2);
-	print_error(err);
-	ft_putstr_fd(": ", 2);
-	ft_putendl_fd(str, 2);
-}
+
 void	handle_error(void)
 {
 	dup2(2, 1);
-	print_err(strerror(errno), "/tmp/temp_file");
-	// printf("Mysh: %s: /tmp/temp_file\n", strerror(errno));
+	printf("Mysh: %s: /tmp/temp_file\n", strerror(errno));
 	exit(1);
 }
 
@@ -274,13 +265,7 @@ char	*read_full_line(void)
 	}
 	return (line);
 }
-void	print_err1(char *err, char *str)
-{
-	ft_putstr_fd("\nMysh: ", 2);
-	ft_putstr_fd(err, 2);
-	ft_putstr_fd(str, 2);
-	ft_putendl_fd("')", 2);
-}
+
 void	process_input(int fd1, char *delemeter)
 {
 	char	*line;
@@ -301,8 +286,12 @@ void	process_input(int fd1, char *delemeter)
 			break ;
 	}
 	if (!line)
-		print_err1("warning: here-document delimited by end-of-file (wanted `",
+	{
+		dup2(2, 1);
+		// this line is long
+		printf("\nMysh: warning: here-document delimited by end-of-file (wanted `%s')\n",
 			delemeter);
+	}
 	free(line);
 }
 
@@ -326,13 +315,50 @@ void	in_file_open(char *path, int *old_fd)
 	*old_fd = open(path, O_RDONLY);
 	if (*old_fd == -1)
 	{
-		dup2(2, 1);
+		// dup2(2, 1);
 		// printf("Mysh: %s: %s\n", strerror(errno), path);
-		print_err(strerror(errno), path);
+		ft_putstr_fd(join_strings("1Mysh: ", strerror(errno), ": ", path, "\n"),
+			2);
 		exit(1);
 	}
 }
 
+char	*join_strings(char *s, ...)
+{
+	va_list	args;
+	size_t	total_length;
+	char	*str;
+	char	*arg;
+
+	va_start(args, s);
+	total_length = strlen(s);
+	str = NULL;
+	while (1)
+	{
+		arg = va_arg(args, char *);
+		if (arg == NULL)
+			break ;
+		total_length += strlen(arg);
+	}
+	va_end(args);
+	str = (char *)malloc(total_length + 1);
+	if (str == NULL)
+	{
+		fprintf(stderr, "Memory allocation failed\n");
+		return (NULL);
+	}
+	va_start(args, s);
+	ft_strlcpy(str, s, total_length + 1);
+	while (1)
+	{
+		arg = va_arg(args, char *);
+		if (arg == NULL)
+			break ;
+		ft_strlcat(str, arg,ft_strlen(str)); // Concatenate the current string to the result
+	}
+	va_end(args);
+	return (str); // Return the newly joined string
+}
 void	out_file_open(int in_her_doc, char *path, int *out_fd)
 {
 	if (!in_her_doc)
@@ -342,8 +368,9 @@ void	out_file_open(int in_her_doc, char *path, int *out_fd)
 	if (*out_fd == -1)
 	{
 		// dup2(2, 1);
+		ft_putstr_fd(join_strings("Mysh: ", strerror(errno), ": ", path, "\n"),
+			2);
 		// printf("Mysh: %s: %s\n", strerror(errno), path);
-		print_err(strerror(errno), path);
 		exit(1);
 	}
 }

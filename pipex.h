@@ -1,8 +1,8 @@
 #ifndef PIPEX_H
 # define PIPEX_H
 
-# include "get_next_line.h"
-# include "libft/libft.h"
+# include "utils_lib/libft.h"
+# include "utils_lib/get_next_line.h"
 # include <errno.h>
 # include <fcntl.h>
 # include <stdbool.h>
@@ -28,7 +28,14 @@ typedef struct s_data
 	t_cmd	*lst_cmd;
 	int		cmd_nbr;
 	char	**envp;
-	int ac;
-} t_data;
+	int		ac;
+}			t_data;
+
+
+/* FUNCTIONS */
+void	print_err(char *err, char *str)
+;
+char	*join_strings(char *s, ...)
+;
 
 #endif
