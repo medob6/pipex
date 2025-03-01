@@ -229,45 +229,60 @@ int	is_delemeter(char *line, char *delemeter)
 		return (1);
 	return (0);
 }
-void	read_from_herdoc(char *delemeter, int *old_fd)
+
+void	handle_error(void)
 {
-	char	*line;
-	int		fd1;
-	char	*tmp;
+	dup2(2, 1);
+	printf("Mysh: %s: /tmp/temp_file\n", strerror(errno));
+	exit(1);
+}
+
+int	create_temp_file(int *old_fd)
+{
+	int	fd1;
 
 	fd1 = open("/tmp/temp_file", O_WRONLY | O_CREAT | O_TRUNC, 0644);
 	*old_fd = open("/tmp/temp_file", O_RDONLY);
-	// unlink("/tmp/temp_file");
-	if (fd1 == -1)
+	unlink("/tmp/temp_file");
+	if (fd1 == -1 || *old_fd == -1)
+		handle_error();
+	return (fd1);
+}
+
+char	*read_full_line(void)
+{
+	char	*line;
+	char	*tmp;
+
+	line = get_next_line(0);
+	while (line && line[ft_strlen(line) - 1] != '\n')
 	{
-		dup2(2, 1);
-		printf("Mysh: %s: /tmp/temp_file\n", strerror(errno));
-		exit(1);
+		tmp = NULL;
+		while (!tmp)
+			tmp = get_next_line(0);
+		line = stor_line(tmp, line);
+		free(tmp);
 	}
+	return (line);
+}
+
+void	process_input(int fd1, char *delemeter)
+{
+	char	*line;
+
 	line = NULL;
 	while (1)
 	{
 		if (line && is_delemeter(line, delemeter))
 			break ;
 		ft_putstr_fd("pipe heredoc> ", 1);
-		if (line != NULL)
+		if (line)
 		{
 			write(fd1, line, ft_strlen(line));
 			free(line);
 		}
-		line = get_next_line(0);
-		if (line)
-		{
-			while (line[ft_strlen(line) - 1] != '\n')
-			{
-				tmp = NULL;
-				while (!tmp)
-					tmp = get_next_line(0);
-				line = stor_line(tmp, line);
-				free(tmp);
-			}
-		}
-		else
+		line = read_full_line();
+		if (!line)
 			break ;
 	}
 	if (!line)
@@ -277,9 +292,67 @@ void	read_from_herdoc(char *delemeter, int *old_fd)
 			delemeter);
 	}
 	free(line);
-	close(fd1);
-	// getchar();
 }
+
+void	read_from_herdoc(char *delemeter, int *old_fd)
+{
+	int	fd1;
+
+	fd1 = create_temp_file(old_fd);
+	process_input(fd1, delemeter);
+	close(fd1);
+}
+
+// void	read_from_herdoc(char *delemeter, int *old_fd)
+// {
+// 	char	*line;
+// 	int		fd1;
+// 	char	*tmp;
+
+// 	fd1 = open("/tmp/temp_file", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+// 	*old_fd = open("/tmp/temp_file", O_RDONLY);
+// 	unlink("/tmp/temp_file");
+// 	if (fd1 == -1 || *old_fd == -1)
+// 	{
+// 		dup2(2, 1);
+// 		printf("Mysh: %s: /tmp/temp_file\n", strerror(errno));
+// 		exit(1);
+// 	}
+// 	line = NULL;
+// 	while (1)
+// 	{
+// 		if (line && is_delemeter(line, delemeter))
+// 			break ;
+// 		ft_putstr_fd("pipe heredoc> ", 1);
+// 		if (line != NULL)
+// 		{
+// 			write(fd1, line, ft_strlen(line));
+// 			free(line);
+// 		}
+// 		line = get_next_line(0);
+// 		if (line)
+// 		{
+// 			while (line[ft_strlen(line) - 1] != '\n')
+// 			{
+// 				tmp = NULL;
+// 				while (!tmp)
+// 					tmp = get_next_line(0);
+// 				line = stor_line(tmp, line);
+// 				free(tmp);
+// 			}
+// 		}
+// 		else
+// 			break ;
+// 	}
+// 	if (!line)
+// 	{
+// 		dup2(2, 1);
+// 		printf("\nMysh: warning: here-document delimited by end-of-file (wanted `%s')\n",
+// 			delemeter);
+// 	}
+// 	free(line);
+// 	close(fd1);
+// }
 
 void	creat_temp_file(int *old_fd)
 {
@@ -312,69 +385,75 @@ void	out_file_open(int in_her_doc, char *path, int *out_fd)
 	}
 }
 
-int	main(int ac, char **av, char **envp)
+void	validate_arguments(int ac, char **av, int *in_her_doc)
 {
-	int		old_fd;
-	int		out_fd;
-	t_cmd	*lst_cmd;
-	int		i;
-	int		cmd_nbr;
-	int		in_her_doc;
-	int		fd[2];
-
-	old_fd = -1;
-	// char	*buf;
-	in_her_doc = (ft_strncmp(av[1], "here_doc", 9) == 0);
-	// buf = NULL;
-	if (ac < 5 + in_her_doc)
+	*in_her_doc = (ft_strncmp(av[1], "here_doc", 9) == 0);
+	if (ac < 5 + *in_her_doc)
 	{
-		printf("bad argments\n");
+		printf("bad arguments\n");
 		exit(0);
 	}
-	if (in_her_doc)
-	{
-		read_from_herdoc(av[2], &old_fd);
-	}
-	cmd_nbr = ac - 3 - in_her_doc;
-	lst_cmd = parse_cmd_list(cmd_nbr, av + 2 + in_her_doc, envp);
-	i = 0;
-	while (i < cmd_nbr)
-	{
-		if (i != cmd_nbr - 1)
-			pipe(fd);
-		lst_cmd[i].pid = fork();
-		if (lst_cmd[i].pid == 0)
-		{
-			if (i == 0)
-			{
-				if (in_her_doc)
-				{
-					// creat_temp_file(&old_fd);
-					if (old_fd == -1)
-						exit(1);
-				}
-				else
-					in_file_open(av[1], &old_fd);
-			}
-			if (i == cmd_nbr - 1)
-			{
-				out_file_open(in_her_doc, av[ac - 1], &out_fd);
-				last_child(lst_cmd[i], envp, old_fd, out_fd);
-			}
-			else
-			{
-				child(lst_cmd[i], envp, old_fd, fd);
-			}
-		}
-		else
-			parent(&old_fd, fd);
-		i++;
-	}
-	wait_for_prc(lst_cmd, cmd_nbr);
-	return (lst_cmd[cmd_nbr - 1].exit_status);
 }
 
+void	excute_child(t_data *prg_data, char **av, int in_her_doc, int index)
+{
+	if (index == 0)
+	{
+		if (in_her_doc)
+		{
+			if (prg_data->old_fd == -1)
+				exit(1);
+		}
+		else
+			in_file_open(av[1], &(prg_data->old_fd));
+	}
+	if (index == prg_data->cmd_nbr - 1)
+	{
+		out_file_open(in_her_doc, av[prg_data->ac - 1], &prg_data->out_fd);
+		last_child(prg_data->lst_cmd[index], prg_data->envp, prg_data->old_fd,
+			prg_data->out_fd);
+	}
+	else
+		child(prg_data->lst_cmd[index], prg_data->envp, prg_data->old_fd,
+			prg_data->fd);
+}
+void	pipex(t_data *prg_data, int in_her_doc, char **av)
+{
+	int	i;
+
+	i = 0;
+	while (i < prg_data->cmd_nbr)
+	{
+		if (i != prg_data->cmd_nbr - 1)
+			pipe(prg_data->fd);
+		prg_data->lst_cmd[i].pid = fork();
+		if (prg_data->lst_cmd[i].pid == 0)
+		{
+			excute_child(prg_data, av, in_her_doc, i);
+		}
+		else
+			parent(&prg_data->old_fd, prg_data->fd);
+		i++;
+	}
+}
+
+int	main(int ac, char **av, char **envp)
+{
+	t_data	prg_data;
+	int		in_her_doc;
+
+	prg_data.old_fd = -1;
+	validate_arguments(ac, av, &in_her_doc);
+	if (in_her_doc)
+		read_from_herdoc(av[2], &prg_data.old_fd);
+	prg_data.cmd_nbr = ac - 3 - in_her_doc;
+	prg_data.lst_cmd = parse_cmd_list(prg_data.cmd_nbr, av + 2 + in_her_doc,
+			envp);
+	prg_data.envp = envp;
+	prg_data.ac = ac;
+	pipex(&prg_data, in_her_doc, av);
+	wait_for_prc(prg_data.lst_cmd, prg_data.cmd_nbr);
+	return (prg_data.lst_cmd[prg_data.cmd_nbr - 1].exit_status);
+}
+// split func to smaller ones
 // handel leaks
-// write heredoc to file instead of malloced buf
-// split main into smaller functions
-// ctrl + d

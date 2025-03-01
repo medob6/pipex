@@ -14,7 +14,7 @@
 
 typedef struct s_cmd
 {
-	char *path;
+	char	*path;
 	char	**args;
 	pid_t	pid;
 	int		exit_status;
@@ -24,10 +24,11 @@ typedef struct s_data
 {
 	int		old_fd;
 	int		out_fd;
-	int		cmd_nbr;
-	int		in_her_doc;
-	char	*buf;
+	int		fd[2];
 	t_cmd	*lst_cmd;
-}			t_data;
+	int		cmd_nbr;
+	char	**envp;
+	int ac;
+} t_data;
 
 #endif
