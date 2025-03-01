@@ -1,33 +1,43 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_strlcpy.c                                       :+:      :+:    :+:   */
+/*   store_line.c                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: mbousset <mbousset@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2024/10/23 11:12:52 by mbousset          #+#    #+#             */
-/*   Updated: 2024/11/03 12:05:26 by mbousset         ###   ########.fr       */
+/*   Created: 2025/03/01 14:07:48 by mbousset          #+#    #+#             */
+/*   Updated: 2025/03/01 17:52:41 by mbousset         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "libft.h"
+#include "pipex.h"
 
-size_t	ft_strlcpy(char *dst, const char *src, size_t dstsize)
+char	*stor_line(char *line, char *buf)
 {
-	size_t	i;
-	size_t	length;
+	char	*new_buf;
 
-	length = 0;
-	while (src[length] != '\0')
-		length++;
+	new_buf = ft_strjoin(buf, line);
+	free(buf);
+	return (new_buf);
+}
+
+void	free_garbeg(t_data *prg_data)
+{
+	int	i;
+
 	i = 0;
-	if (!dstsize)
-		return (length);
-	while (src[i] && (i < dstsize - 1))
+	while (i < prg_data->cmd_nbr)
 	{
-		dst[i] = src[i];
+		free(prg_data->lst_cmd[i].path);
+		free_all(prg_data->lst_cmd[i].args);
 		i++;
 	}
-	dst[i] = '\0';
-	return (length);
+	free(prg_data->lst_cmd);
+	get_next_line(-1);
+}
+
+void	ft_exit(t_data *prg_data, int status)
+{
+	free_garbeg(prg_data);
+	exit(status);
 }
